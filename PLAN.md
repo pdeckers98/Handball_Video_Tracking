@@ -6,7 +6,10 @@ per team: shots, goals, saves, misses/blocks, where each shot was taken, and whe
 **Constraints**
 - As little hand-labeling as possible.
 - **Everything runs locally.** Video understanding uses an **open-source VLM** on a GTX 1660 Super
-  (6 GB VRAM, Turing: fp16 only, no bf16, no FlashAttention 2). No paid APIs.
+  (6 GB VRAM, Turing without tensor cores, no FlashAttention 2). No paid APIs.
+  **Measured (M2): on this card fp16 matmuls are ~5x slower than fp32, while bf16 runs as
+  fast as fp32 (cuBLAS computes it in fp32) at half the memory. Use bf16, or 4-bit weights
+  with bf16 compute; never fp16.** (SmolVLM2-500M: 7.4 s -> 2.2 s per query.)
 - **Local hardware first, rented GPU last.** Renting a cloud GPU is allowed but not preferred. Long
   runtimes are acceptable (e.g. overnight batch runs, hours of training), as long as they are not
   extreme. Before proposing a rental, use up the local options:
@@ -39,7 +42,7 @@ A small VLM is slow (seconds per query) and weaker than API models, so:
 - **Questions are narrow, with constrained JSON answers** (one field at a time if needed). Small
   models do much better on multiple-choice questions than on open-ended ones.
 - **Model choice is made by measurement, not guessed** (M2). The models below all fit in 6 GB
-  (fp16 or 4-bit). We check for newer releases at M2 time.
+  (bf16 or 4-bit). We check for newer releases at M2 time.
 
   | Group | Models | Why it's in the bake-off |
   |---|---|---|
@@ -48,7 +51,7 @@ A small VLM is slow (seconds per query) and weaker than API models, so:
 
   Expected setup: **tiered.** A fast edge model screens candidates and points at the ball/goal. A
   mid-size model is used only for the questions where it measurably beats the edge model. The
-  bake-off reports accuracy, seconds per query and VRAM. Backend: HF `transformers` (fp16 or
+  bake-off reports accuracy, seconds per query and VRAM. Backend: HF `transformers` (bf16 or
   `bitsandbytes` 4-bit); llama.cpp/Ollama GGUF or ONNX if faster.
 
 ## Pipeline

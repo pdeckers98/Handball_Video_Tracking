@@ -15,4 +15,7 @@ dependencies:
       - qwen-vl-utils
       - opencv-python
       - pandas
+      - num2words  # SmolVLM processor
+      - pyvips[binary]  # Moondream2 remote code
+      - einops  # Moondream2 remote code
       - -e .[dev]
