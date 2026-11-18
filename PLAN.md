@@ -7,6 +7,19 @@ per team: shots, goals, saves, misses/blocks, where each shot was taken, and whe
 - As little hand-labeling as possible.
 - **Everything runs locally.** Video understanding uses an **open-source VLM** on a GTX 1660 Super
   (6 GB VRAM, Turing: fp16 only, no bf16, no FlashAttention 2). No paid APIs.
+- **Local hardware first, rented GPU last.** Renting a cloud GPU is allowed but not preferred. Long
+  runtimes are acceptable (e.g. overnight batch runs, hours of training), as long as they are not
+  extreme. Before proposing a rental, use up the local options:
+  1. Smaller / edge models, 4-bit quantization, lower resolution, fewer and better-chosen frames.
+  2. Cache everything (decoded windows, crops, model outputs) so no work is repeated.
+  3. Run batch jobs overnight; process candidates in queues that can be resumed after a stop.
+  4. CPU offload and gradient checkpointing for fine-tuning; LoRA/QLoRA on edge models only.
+  5. Swap a weak VLM step for classical CV (motion, geometry) or a small local detector/classifier.
+  
+  A rental is only worth discussing when a specific step is shown (with measured numbers) to need
+  more than 6 GB VRAM, or to take unreasonably long locally, *and* it clearly improves test-set
+  accuracy. If so, rent for that one step only (e.g. a single fine-tuning run) and run inference
+  locally.
 - **All code must pass flake8** (config in `.flake8`, also enforced by CI on every push/PR).
 - Python env: conda env `handball` (`environment.yml`).
 
