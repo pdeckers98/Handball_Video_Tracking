@@ -1,0 +1,5 @@
+# Project settings. Relative paths are resolved against this file's folder.
+paths:
+  clips: clips        # match videos (git-ignored)
+  cache: cache        # reusable intermediate results (git-ignored)
+  outputs: outputs    # reports, extracted windows (git-ignored)

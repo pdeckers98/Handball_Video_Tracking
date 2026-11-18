@@ -101,7 +101,7 @@ homography, and project the shooter's feet onto a court diagram.
 ## Milestones
 | # | Deliverable | Check |
 |---|---|---|
-| M0 | Repo skeleton, `handball` env, flake8 + CI, clip-window extractor (ffmpeg seek, crops) | `flake8` clean; extract any t ± 2 s window quickly |
+| M0 ✅ | Repo skeleton, `handball` env, flake8 + pytest CI, clip-window extractor (`handball.video`, `python -m handball window`) | Done: 4 s window in ~0.2–1 s, frame-exact (fixed garbled B-frame timestamps) |
 | M1 | Scoreboard reader -> goals timeline for all 8 clips | Final scores correct |
 | M2 | VLM bake-off on goal vs non-goal windows (accuracy, s/query, VRAM) | Pick a model + backend |
 | M3 | Candidate finder | Recall vs scoreboard goals ≥ 95% |
