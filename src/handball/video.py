@@ -164,6 +164,38 @@ def iter_frames(
             yield Frame(t=t, index=index, image=image)
 
 
+def iter_keyframes(
+    path: str | Path,
+    start: float = 0.0,
+    end: float | None = None,
+    crop: Region | None = None,
+    width: int | None = None,
+) -> Iterator[Frame]:
+    """Yield only keyframes (every ~4 s in our clips). Very fast: other frames are not decoded.
+
+    Keyframe timestamps are reliable, so ``t`` is exact.
+    """
+    start = max(0.0, start)
+    with av.open(str(path)) as container:
+        stream = container.streams.video[0]
+        stream.thread_type = "AUTO"
+        stream.codec_context.skip_frame = "NONKEY"
+        native_fps = _nominal_fps(stream)
+        if start > 0:
+            container.seek(int(start / stream.time_base), stream=stream, backward=True)
+        for frame in container.decode(stream):
+            if frame.time is None:
+                continue
+            index = int(round(float(frame.time) * native_fps))
+            t = index / native_fps
+            if t < start - _EPS:
+                continue
+            if end is not None and t >= end - _EPS:
+                break
+            image = _prepare(frame.to_ndarray(format="rgb24"), crop, width)
+            yield Frame(t=t, index=index, image=image)
+
+
 def read_window(
     path: str | Path,
     center: float,

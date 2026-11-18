@@ -4,7 +4,9 @@ import av
 import numpy as np
 import pytest
 
-from handball.video import Frame, Region, iter_frames, probe, read_window, write_video
+from handball.video import (
+    Frame, Region, iter_frames, iter_keyframes, probe, read_window, write_video,
+)
 
 FPS = 25
 SECONDS = 6
@@ -23,7 +25,8 @@ def video(tmp_path_factory):
     with av.open(str(path), mode="w") as container:
         stream = container.add_stream("libx264", rate=Fraction(FPS))
         stream.width, stream.height, stream.pix_fmt = W, H, "yuv420p"
-        stream.options = {"g": str(2 * FPS), "crf": "10"}
+        gop = f"keyint={2 * FPS}:min-keyint={2 * FPS}:scenecut=0"
+        stream.options = {"crf": "10", "x264-params": gop}
         for i in range(FPS * SECONDS):
             image = np.full((H, W, 3), _level(i), dtype=np.uint8)
             for packet in stream.encode(av.VideoFrame.from_ndarray(image, format="rgb24")):
@@ -55,6 +58,14 @@ def test_sampling_fps(video):
     assert len(frames) == 10
     gaps = np.diff([f.t for f in frames])
     assert np.allclose(gaps, 0.2, atol=1 / FPS)
+
+
+def test_keyframes(video):
+    frames = list(iter_keyframes(video))
+    assert [f.t for f in frames] == pytest.approx([0.0, 2.0, 4.0])  # GOP = 2 s
+    for frame in frames:
+        assert frame.image.mean() == pytest.approx(_level(frame.index), abs=4)
+    assert [f.t for f in iter_keyframes(video, start=1.0, end=4.0)] == pytest.approx([2.0])
 
 
 def test_crop_and_resize(video):

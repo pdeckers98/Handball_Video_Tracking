@@ -58,6 +58,45 @@ def _cmd_window(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_goals(args: argparse.Namespace) -> int:
+    from handball.goals import detect_goals, scan, write_goals_csv
+
+    config = load_config(args.config)
+    clips = args.clips or sorted(p.stem for p in config.paths.clips.glob("*.mp4"))
+    status = 0
+    for name in clips:
+        clip = config.resolve_clip(name)
+        started = time.perf_counter()
+        samples = scan(clip, cache_dir=config.paths.cache, refresh=args.refresh)
+        result = detect_goals(clip, samples, refine=not args.no_refine)
+        out = config.paths.outputs / "goals" / f"{clip.stem}.csv"
+        write_goals_csv(result, out)
+        home, away = result.counts()
+        clock = (
+            "n/a" if result.clock_consistency is None else f"{result.clock_consistency:.1%}"
+        )
+        check = "OK" if result.consistent() else "MISMATCH"
+        print(
+            f"{clip.stem}: {result.home_name} vs {result.away_name} ({result.half}) "
+            f"{result.start_score} -> {result.end_score}, goals {home}+{away} [{check}], "
+            f"corrections {result.corrections}, overlay visible {result.present_ratio:.0%}, "
+            f"clock reads consistent {clock}, {time.perf_counter() - started:.0f}s -> {out}"
+        )
+        if args.verbose:
+            for g in result.goals:
+                flags = f"  [{', '.join(g.flags)}]" if g.flags else ""
+                clock_txt = "--:--"
+                if g.clock is not None:
+                    clock_txt = f"{g.clock // 60:02d}:{g.clock % 60:02d}"
+                print(
+                    f"   {format_timecode(g.t):>9}  {clock_txt}  {g.score:>5}  "
+                    f"{g.team_name or g.team}{flags}"
+                )
+        if not result.consistent():
+            status = 1
+    return status
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="handball", description=__doc__)
     parser.add_argument("--config", default=str(DEFAULT_CONFIG), help="path to config.yaml")
@@ -77,6 +116,13 @@ def build_parser() -> argparse.ArgumentParser:
     window.add_argument("--width", type=int, help="output width in pixels")
     window.add_argument("--out", help="output .mp4 file or a folder for JPEGs")
     window.set_defaults(func=_cmd_window)
+
+    goals = sub.add_parser("goals", help="goal events from the score overlay")
+    goals.add_argument("clips", nargs="*", help="clip names or paths (default: all clips)")
+    goals.add_argument("--refresh", action="store_true", help="ignore cached overlay scans")
+    goals.add_argument("--no-refine", action="store_true", help="keyframe (4 s) precision only")
+    goals.add_argument("-v", "--verbose", action="store_true", help="list every goal")
+    goals.set_defaults(func=_cmd_goals)
     return parser
 
 

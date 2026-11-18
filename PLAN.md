@@ -102,7 +102,7 @@ homography, and project the shooter's feet onto a court diagram.
 | # | Deliverable | Check |
 |---|---|---|
 | M0 ✅ | Repo skeleton, `handball` env, flake8 + pytest CI, clip-window extractor (`handball.video`, `python -m handball window`) | Done: 4 s window in ~0.2–1 s, frame-exact (fixed garbled B-frame timestamps) |
-| M1 | Scoreboard reader -> goals timeline for all 8 clips | Final scores correct |
+| M1 ✅ | Scoreboard reader -> goals timeline for all 8 clips (`handball.scoreboard`, `handball.goals`, `python -m handball goals`) | Done: 8/8 clips consistent (start + goals = end), change pinned to the frame, 0 unreadable fields, ~40 s per clip |
 | M2 | VLM bake-off on goal vs non-goal windows (accuracy, s/query, VRAM) | Pick a model + backend |
 | M3 | Candidate finder | Recall vs scoreboard goals ≥ 95% |
 | M4 | Review page + correct 1 half -> test set | Test set saved |
@@ -120,6 +120,20 @@ homography, and project the shooter's feet onto a court diagram.
 ## Data we have
 - `clips/` (local only): 8 halves, 1080p50, ~30–36 min each, with score overlay.
 - `labels/`: court keypoints (329), player/ball boxes (425), ball handler (129). See `labels/README.md`.
+
+## M1 findings (scoreboard)
+- Overlay is identical in all clips; template matching reads it with no observed errors
+  (templates harvested from the clips, see `tools/build_scoreboard_templates.py`).
+- The 8 clips are 4 games x 2 halves: PSV (clip1-2), VOL (clip3-4), E&O (clip5-6), VZV (clip7-8).
+  SEW is always the home team (left).
+- Footage gaps (not reader errors): clip5 starts at 06:58 (4-3); clip6 starts 08:52 into the 2nd
+  half; clip7 ends at 29:16; clip8 starts at 01:45 and ends at 27:35. clip4's overlay still shows
+  "1ST" although it is the VOL 2nd half. Per-clip stats are therefore per *recorded* period.
+- The game clock is edited by the timekeeper (small backwards jumps), so we use clip time as the
+  timeline and the game clock only as a label.
+- The overlay changes when the operator updates it, a few seconds after the ball crosses the
+  line. Sometimes the update is batched (e.g. two goals at the half-time buzzer). M3 has to search
+  backwards from each overlay change for the actual shot.
 
 ## Team attribution (both teams)
 Stats are reported for **both teams** (home and opponent, names taken from the scoreboard).

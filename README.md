@@ -3,7 +3,7 @@
 Extract shooting statistics (shots, goals, saves, misses, shot location and placement in the goal)
 from amateur handball match video, running fully locally with an open-source vision-language model.
 
-Status: early development (M0 done). See [PLAN.md](PLAN.md).
+Status: early development (M0-M1 done). See [PLAN.md](PLAN.md).
 
 ## Setup
 
@@ -30,6 +30,9 @@ python -m handball window clip1 --at 8:00 --fps 10 --width 640
 
 # Crop a region (normalized x,y,w,h) and save JPEGs to a folder
 python -m handball window clip1 --at 20:00 --after 0.1 --crop 0.38,0.03,0.24,0.14 --out outputs/sb
+
+# Goal events from the score overlay (all clips; -v lists every goal) -> outputs/goals/<clip>.csv
+python -m handball goals -v clip1
 ```
 
 In Python:
