@@ -25,10 +25,18 @@ A small VLM is slow (seconds per query) and weaker than API models, so:
   search through time.
 - **Questions are narrow, with constrained JSON answers** (one field at a time if needed). Small
   models do much better on multiple-choice questions than on open-ended ones.
-- **Model choice is made by measurement, not guessed** (M2). Candidates to benchmark, all 4-bit or
-  fp16 so they fit in 6 GB: Qwen3-VL-2B/4B-Instruct, Qwen2.5-VL-3B-Instruct, InternVL3.5-2B/4B,
-  MiniCPM-V (4-bit). We check for newer releases at M2 time. Backend: HF `transformers` +
-  `bitsandbytes` (4-bit, fp16 compute). Fallback: llama.cpp/Ollama GGUF if that turns out faster.
+- **Model choice is made by measurement, not guessed** (M2). The models below all fit in 6 GB
+  (fp16 or 4-bit). We check for newer releases at M2 time.
+
+  | Group | Models | Why it's in the bake-off |
+  |---|---|---|
+  | Edge / small | **SmolVLM2** (256M / 500M / 2.2B), **Moondream** (~2B) | Fast on the 1660; SmolVLM2 handles video; Moondream has built-in point/detect (ball in the goal crop -> placement); small enough to LoRA fine-tune locally |
+  | Mid (2-4B) | Qwen3-VL-2B/4B, Qwen2.5-VL-3B, InternVL3.5-2B/4B | Stronger at reasoning over several frames ("was it a shot, was it saved?"); slower, harder to fine-tune on 6 GB |
+
+  Expected setup: **tiered.** A fast edge model screens candidates and points at the ball/goal. A
+  mid-size model is used only for the questions where it measurably beats the edge model. The
+  bake-off reports accuracy, seconds per query and VRAM. Backend: HF `transformers` (fp16 or
+  `bitsandbytes` 4-bit); llama.cpp/Ollama GGUF or ONNX if faster.
 
 ## Pipeline
 
@@ -87,7 +95,7 @@ homography, and project the shooter's feet onto a court diagram.
 | M4 | Review page + correct 1 half -> test set | Test set saved |
 | M5 | Shot judge + shot detail + consistency checks | Accuracy vs test set; iterate prompts and frame selection |
 | M6 | End-to-end `python -m handball analyze clip.mp4` -> JSON + HTML | Runs on all 8 clips; time per clip logged |
-| M7 (opt.) | Fine-tune the VLM (LoRA) or a small classifier on corrected / pseudo-labeled shots | Better test-set accuracy |
+| M7 (opt.) | LoRA fine-tune an edge VLM (e.g. SmolVLM2) on corrected / pseudo-labeled shots | Better test-set accuracy |
 
 ## Code standards
 - Package in `src/handball/`, entry point `python -m handball`.
@@ -101,5 +109,7 @@ homography, and project the shooter's feet onto a court diagram.
 - `labels/`: court keypoints (329), player/ball boxes (425), ball handler (129). See `labels/README.md`.
 
 ## Open questions
-- Do any official or hand-written stats exist for these games? Those would be free ground truth.
 - Should stats be split by team (SEW vs opponent) or only for SEW?
+
+No stat sheets exist for these games, so ground truth comes only from the scoreboard (goals) and
+the corrected review half.
