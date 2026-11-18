@@ -121,8 +121,16 @@ homography, and project the shooter's feet onto a court diagram.
 - `clips/` (local only): 8 halves, 1080p50, ~30–36 min each, with score overlay.
 - `labels/`: court keypoints (329), player/ball boxes (425), ball handler (129). See `labels/README.md`.
 
-## Open questions
-- Should stats be split by team (SEW vs opponent) or only for SEW?
+## Team attribution (both teams)
+Stats are reported for **both teams** (home and opponent, names taken from the scoreboard).
+How each shot gets its team:
+- **Goals:** the team whose score changed on the scoreboard (exact).
+- **Other shots:** the goal being attacked. Each clip is one half, so the teams don't swap sides
+  within a clip. We work out the side for each team once per clip from the scoreboard goals (which
+  goal did the scoring team attack?). After that, the attacked goal (left or right, from the camera
+  pan) gives the team.
+- **Check:** shirt colour of the shooter (dominant colour in the shooter's box vs the two team
+  colours learned per clip). Disagreements go to the review queue.
 
 No stat sheets exist for these games, so ground truth comes only from the scoreboard (goals) and
 the corrected review half.
