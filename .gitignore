@@ -1,0 +1,31 @@
+# Footage and derived media (never published)
+clips/
+*.mp4
+*.mkv
+*.m3u8
+frames/
+cache/
+outputs/
+
+# Model weights
+models/
+*.pt
+*.pth
+*.safetensors
+*.gguf
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# Private local notes
+*.local.md
